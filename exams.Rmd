@@ -1,0 +1,735 @@
+---
+title: "Effect of Students Score"
+output:
+  html_document:
+    df_print: paged
+  theme: united
+  toc: yes
+  html_notebook: default
+---
+
+
+
+
+
+```{r}
+# This project entails predicting the Students Performance in Exams for students in various subjects by high school Students from the United States.
+
+# Highcharter package will be used for some visualization in this project
+
+# Logistics Regression, Random forest and Dicision Tree will be used to build predictive models to see which model is the best predictor of the students performance in the exams after exploring the data
+
+# Loading packages neebed in R for the entile project
+
+      library(highcharter)
+      library(tidyverse)
+      library(skimr)
+      library(corrplot)
+      library(randomForest)
+      library(caTools)
+      library(ROCR)
+      # library(InformationValue)
+      library(e1071)
+      library(DAAG)
+      library(party)
+      library(rpart)
+      library(rpart.plot)
+      library(mlbench)
+      library(caret)
+      library(pROC)
+      library(tree)
+
+```
+
+
+```{r}
+# loading and showing some overview of the data 
+getwd()
+Raw_data <- read.csv("/Users/stephenampah/Documents/Thesis/exams.csv")
+
+    attach(Raw_data)
+    names(Raw_data)
+```
+
+
+```{r}
+# Summary statistics of the data by applying skim functions
+summary(Raw_data)
+skim(Raw_data)
+```
+The skim function helps one to know: 
+1. the dimension, the minimum and maximum values of the data
+2. the mean and the standard deviation of the various numeric variables
+3. if there are missing values
+4. the unique numbers, how the the data is distributed and some other important things 
+
+
+
+```{r}
+# Now we try visualizing the variables to check potential outlier, using box plot
+
+### CHECKING OUTLIERS IN THE PAREANTAL LEVEL OF EDUCATION AS AGAINST EACH SCORE
+    
+    ## Maths Score
+    Raw_data1 <- data_to_boxplot(Raw_data, math.score, parental.level.of.education)
+    highchart() %>%
+      hc_plotOptions(boxplot = list(
+        fillColor = '#F0F0E0',
+        lineWidth = 2,
+        medianColor = '#0C5DA5',
+        medianWidth = 3,
+        stemColor = '#A63400',
+        stemDashStyle = 'dot',
+        stemWidth = 1,
+        whiskerColor = '#3D9200',
+        whiskerLength = '50%',
+        whiskerWidth = 3,
+        color = 'black'
+      ))  %>% 
+      hc_xAxis(type = "category") %>%
+      hc_yAxis(title = list(text = "Maths Scores"))%>%
+      hc_legend(enabled = F)%>%
+      hc_add_series_list(Raw_data1)
+    
+    
+    ## Reading Score
+    Raw_data1 <- data_to_boxplot(Raw_data, reading.score, parental.level.of.education)
+    highchart() %>%
+      hc_plotOptions(boxplot = list(
+        fillColor = '#F0E0E0',
+        lineWidth = 2,
+        medianColor = '#0C5DA5',
+        medianWidth = 3,
+        stemColor = '#A63400',
+        stemDashStyle = 'dot',
+        stemWidth = 1,
+        whiskerColor = '#3D9200',
+        whiskerLength = '50%',
+        whiskerWidth = 3,
+        color = 'black'
+      ))  %>% 
+      hc_xAxis(type = "category") %>%
+      hc_yAxis(title = list(text = "Reading Scores"))%>%
+      hc_legend(enabled = F)%>%
+      hc_add_series_list(Raw_data1)
+    
+    
+    ## Writing Score
+    Raw_data1 <- data_to_boxplot(Raw_data, writing.score, parental.level.of.education)
+    highchart() %>%
+      hc_plotOptions(boxplot = list(
+        fillColor = '#E0E0E0',
+        lineWidth = 2,
+        medianColor = '#0C5DA5',
+        medianWidth = 3,
+        stemColor = '#A63400',
+        stemDashStyle = 'dot',
+        stemWidth = 1,
+        whiskerColor = '#3D9200',
+        whiskerLength = '50%',
+        whiskerWidth = 3,
+        color = 'black'
+      ))  %>% 
+      hc_xAxis(type = "category") %>%
+      hc_yAxis(title = list(text = "Writing Scores"))%>%
+      hc_legend(enabled = F)%>%
+      hc_add_series_list(Raw_data1)
+```
+ It can clearly be said that there are no outlier in the various scores.
+ 
+ We proceed with how the dataset distributed with Gender by way of Pie chart
+ 
+ 
+```{r}
+##### How is the distribution of Gender in the dataset #####
+    
+    ### Math
+    summary_gender_math <- Raw_data %>% group_by(gender) %>% 
+      summarise(Total = sum(math.score)) %>% mutate(percentage = Total/sum(Total))
+    
+    hc <- summary_gender_math %>%
+      hchart("pie", hcaes(x = gender, y = "Total"),
+             borderWidth = 0,
+             dataLabels = list(enabled = T, 
+                               distance = -67,
+                               style = list(color = "#rf8f9fa",
+                                            textOutline = F,
+                                            fontWeight = 'bold',
+                                            fontSize = 18),
+                               format = '<b>{point.name}</b>: {point.percentage:.1f} %',
+                               connectorColor = 'silver'))%>%
+    hc_colors(c("#fc8eac",
+                "#00ccff"))%>%
+    hc_title(text = "Distribution of Gender by Maths Score",
+             style = list(color = "#rf8f9fa",
+                          textOutline = F,
+                          fontWeight = 'bold',
+                          fontSize = 18))%>%
+    hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
+       
+    hc
+```   
+    
+```{r}
+### Reading
+    summary_gender_reading <- Raw_data %>% group_by(gender) %>% 
+      summarise(Total = sum(reading.score)) %>% mutate(percentage = Total/sum(Total))
+    
+    hc <- summary_gender_reading %>%
+      hchart("pie", hcaes(x = gender, y = "Total"),
+             borderWidth = 0,
+             dataLabels = list(enabled = T, 
+                               distance = -67,
+                               style = list(color = "#rf8f9fa",
+                                            textOutline = F,
+                                            fontWeight = 'bold',
+                                            fontSize = 18),
+                               format = '<b>{point.name}</b>: {point.percentage:.1f} %',
+                               connectorColor = 'silver'))%>%
+      hc_colors(c("#fc8eac",
+                  "#00ccff"))%>%
+      hc_title(text = "Distribution of Gender by Reading Score",
+               style = list(color = "#rf8f9fa",
+                            textOutline = F,
+                            fontWeight = 'bold',
+                            fontSize = 18))%>%
+      hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
+    hc
+```
+    
+    
+```{r}
+    ### Writing
+    summary_gender_writing <- Raw_data %>% group_by(gender) %>% 
+      summarise(Total = sum(writing.score)) %>% mutate(percentage = Total/sum(Total))
+    
+    hc <- summary_gender_writing %>%
+      hchart("pie", hcaes(x = gender, y = "Total"),
+             borderWidth = 0,
+             dataLabels = list(enabled = T, 
+                               distance = -67,
+                               style = list(color = "#rf8f9fa",
+                                            textOutline = F,
+                                            fontSize = 18),
+                               format = '<b>{point.name}</b>: {point.percentage:.1f} %',
+                               connectorColor = 'silver'))%>%
+      hc_colors(c("#fc8eac",
+                  "#00ccff"))%>%
+      hc_title(text = "Distribution of Gender by Writing Score",
+               style = list(color = "#rf8f9fa",
+                            textOutline = F,
+                            fontSize = 18))%>%
+      hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
+    hc
+    
+```
+ 
+ 
+ We proceed with Comparing Parent Education level with the child's gender by way of a column chart
+ 
+ 
+```{r}
+ #### Comparing Parent Education level with the child's gender####
+    
+    ### Parental level of education by gender count
+    summary_parent_level_edu <- Raw_data %>% group_by(parental.level.of.education)%>% count(gender)
+    
+    ### Setting the colours 
+    summary_parent_level_edu$col <- ifelse(summary_parent_level_edu$gender == "male", '#00ccff', '#fc8eac')
+    
+    ### Wrapping JS code into r to show how the top column to into the bottom column
+     wrapper = list(load = JS("(function (H) {
+      H.wrap(H.seriesTypes.column.prototype, 'drawPoints', function (proceed) {
+        let seriesIndex = this.index
+          $.each(this.points, function (i,point) {
+          	point.shapeArgs.y -= seriesIndex == 0 ? 0 : 5;
+            point.shapeArgs.height +=  5;
+          });
+          proceed.apply(this, Array.prototype.slice.call(arguments, 1));
+      });
+  }(Highcharts));
+      "))
+    
+    ### Column chart with highcharter package
+    hc <- summary_parent_level_edu %>%
+      hchart("column", hcaes(x = parental.level.of.education, y = "n", group = "gender"),
+             stacking = "normal",
+             borderLine = F,
+             events = wrapper,
+             #backgroundColor = "red",
+             dataLabels = list(enabled = T, 
+                               distance = -67,
+                               style = list(color = "#f8f9fa",
+                                            textOutline = F,
+                                            fontSize = 15)))%>%
+      
+      hc_plotOptions(series = list(
+        borderRadius = 8,
+        borderWidth = 0
+        ))%>%
+      
+      hc_xAxis(title = list(
+        text = 'Type of Education',
+        style = list(color = "#rf8f9fa",
+                     textOutline = F,
+                     fontWeight = 'bold',
+                     fontSize = 15)),
+        labels = list(style = list(color = "#rf8f9fa",
+                              textOutline = F,
+                              fontWeight = 'bold',
+                              fontSize = 10))
+        ) %>%
+      hc_yAxis(gridLineWidth = F,
+               title = F,
+               labels = list(style = list(color = "#rf8f9fa",
+                                          textOutline = F,
+                                          fontWeight = 'bold',
+                                          fontSize = 10)),
+               stackLabels = list(enabled = T,
+                                  style = list(color = "#rf8f9fa",
+                                               textOutline = F,
+                                               fontWeight = 'bold',
+                                               fontSize = 25)))%>%
+      hc_title(text = "Parent Education Level with the Child's Gender",
+               style = list(color = "#rf8f9fa",
+                            textOutline = F,
+                            fontWeight = 'bold',
+                            fontSize = 18)
+               #y = 90
+               )%>%
+     hc_legend(labelFormat = '<span style="color:{color}">{name}</span')%>%
+     hc_colors(summary_parent_level_edu$col)%>%
+    
+      hc_tooltip(pointFormat = '{series.name}: {point.y}<br/>Total: {point.stackTotal}')
+    hc
+```
+ 
+ Comparing Students level of preparation 
+ 
+```{r}
+#### Comparing Students level of preparation  ####
+    
+    ### Parental level of education by gender count
+    summary_test_preparation <- Raw_data %>% group_by(gender)%>% count(test.preparation.course)
+    
+    ### Setting the colours 
+    summary_test_preparation$coll <- ifelse(summary_test_preparation$test.preparation.course == "completed", '#40e0d0', '#4d9385')
+    
+      ### Column chart with highcharter package
+      hc <- summary_test_preparation %>%
+      hchart("column", hcaes(y = "n", group = "test.preparation.course"),
+             stacking = "normal",
+             borderLine = F,
+             dataLabels = list(enabled = T, 
+                               distance = -67,
+                               style = list(color = "#112d31",
+                                            textOutline = F,
+                                            fontSize = 15)))%>%
+      hc_chart(inverted = T,
+               polar = T)%>%
+      
+      hc_plotOptions(series = list(
+        borderRadius = 5,
+        pointPadding = 0,
+        groupPadding = 0.15,
+        borderWidth = 0))%>%
+       
+      hc_pane(innerSize = '20%',
+              endAngle = 270)%>%
+
+      hc_xAxis(categories = c("Male", "Female"),
+               gridLineWidth = F,
+               labels = list(align = "right",
+                             y = 3,
+                             style = list(color = "#rf8f9fa",
+                                          textOutline = F,
+                                          fontWeight = 'bold',
+                                          fontSize = 20)),
+               stackLabels = list(enabled = T,
+                                  style = list(color = "#rf8f9fa",
+                                               textOutline = F,
+                                               fontWeight = 'bold',
+                                               fontSize = 15))) %>%
+      hc_yAxis(visible = F, 
+               stackLabels = list(enabled = T,
+                                  style = list(color = "#rf8f9fa",
+                                               textOutline = F,
+                                               fontWeight = 'bold',
+                                               fontSize = 15)))%>%
+      hc_title(text = "Radial chart showing whether Student Prepared for the Exams",
+               style = list(color = "#rf8f9fa",
+                            textOutline = F,
+                            fontWeight = 'bold',
+                            fontSize = 18),
+               y = 50)%>%
+      hc_legend(labelFormat = '<span style="color:{color}">{name}</span')%>%
+      hc_colors(summary_test_preparation$coll)
+    hc
+```
+ 
+ Predictions with:
+                  Logistics Regression, 
+                  Random forest 
+                  Dicision Tree
+ All predictions are based on the train data set
+ 
+```{r}
+####Data Perparation for Prediction using Parental Level of Education #####
+    ## Mapping Raw_data to Final_data
+    Final_data <- data.frame(Raw_data)
+    
+    ### ifelse Condition to assign cathegories to Parent level of education
+    Final_data$Parent.level <- ifelse(Raw_data$parental.level.of.education == "high school", 1, 
+                        ifelse(Raw_data$parental.level.of.education == "some high school", 2,
+                               ifelse(Raw_data$parental.level.of.education == "some college", 3,
+                                      ifelse(Raw_data$parental.level.of.education == "associate's degree", 4,
+                                             ifelse(Raw_data$parental.level.of.education == "bachelor's degree", 5, 0)))))
+
+    
+    ## comverting parent level to factor
+    Final_data$Parent.level.edu <- as.factor(Final_data$Parent.level)
+    str(Final_data)
+```
+ 
+ We start with Logistic Regression Model for the prediction on parental level of education 
+ 
+```{r}
+#splitting data into train and test dataset
+    set.seed(1254)
+    n<- dim(Final_data)[1]
+    
+    ind <- sample(1:n,n*0.7, replace=F)
+    
+    train_data <- Final_data[ind,]
+    test_data <- Final_data[-ind,]
+    
+    
+    #fit logistic regression model
+    model <- glm(Parent.level.edu ~ math.score + reading.score + writing.score, family="binomial", data=train_data)
+    summary(model)
+    
+    
+    # predicting train data based on the model
+    pred_model <- predict(model, Temp_data = train_data,type="response")
+    
+    # Changing probabilities
+    predict_reg <- ifelse(pred_model >0.5, 1, 0)
+    
+    # Convert to factor: p_class
+    p_class <- factor(predict_reg, levels = levels(train_data$Parent.level.edu))
+    
+    ## Generating confusion matrix
+    confusionMatrix(p_class , train_data$Parent.level.edu)
+```
+ 
+ We proceed with Random Forest Model for the prediction on parental level of education 
+ 
+```{r}
+#splitting data into train and test dataset
+    set.seed(1234)
+    n<- dim(Final_data)[1]
+    
+    ind <- sample(1:n,n*0.7, replace=F)
+    
+    train_data <- Final_data[ind,]
+    test_data <- Final_data[-ind,]
+    
+### Train Data    
+#we begin with a random variable classifier model using 3000 trees
+    set.seed(1224)
+    rf.class <- randomForest(Parent.level.edu ~ math.score + writing.score + reading.score, data=train_data, ntree=3000)
+    print(rf.class)
+    
+    # Showing variable of important
+    varImpPlot(rf.class)
+    
+    #Class prediction (majority vote) -  predicting with train datasets and confusion matrix to assess predictive performance
+    class.pred <- predict(rf.class, data = train_data)
+    confusionMatrix(class.pred, train_data$Parent.level.edu)
+    
+    #plotting the errror rate
+    plot(rf.class)
+```
+ 
+ We conclude with Decision Trees Model for the prediction on parental level of education 
+ 
+```{r}
+#######Decision Trees########
+    ##Classification Tree##
+    
+#Data Partition#
+        set.seed(1234)
+        n<- dim(Final_data)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Final_data[ind,]
+        test_data <- Final_data[-ind,]
+        
+      set.seed(2225)
+      ## Tree Classification
+      tree <- rpart(Parent.level.edu ~., data = train_data)
+      rpart.plot(tree)
+    
+      printcp(tree)
+      ##Method 1 Classification tree:
+      rpart(formula = Parent.level.edu ~ ., data = train_data)
+        
+      ##Coefficient of Variation  
+      plotcp(tree)
+    
+      ## Choosing a complexity parameter (cp) to prune the tree
+      tree <- rpart(Parent.level.edu ~., data = train_data,cp=0.010000)
+      summary(tree)
+        
+      # ##Confusion matrix -train
+      p <- predict(tree, train_data, type = 'class')
+      confusionMatrix(p, train_data$Parent.level.edu)
+```
+ 
+ 
+Predictions according to Test Preparation of the Course  
+
+```{r}
+#### Data Perparation for Prediction using Test Preparation of the Course  #####
+####### Mapping Raw_data to Temp
+        
+        Temp_data <- data.frame(Raw_data)
+        
+        ### ifelse Condition to assign cathegories to Test Preparation Course
+        Temp_data$preparation.level <- ifelse(Raw_data$test.preparation.course == "completed", 1, 0)
+      
+        Temp_data$preparation.level <- as.factor(Temp_data$preparation.level)
+        str(Temp_data)
+
+```
+
+We start with Logistic Regression Model for the prediction on test preparation
+    
+```{r}
+#splitting data into train and test dataset
+        set.seed(1237)
+        n<- dim(Temp_data)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Temp_data[ind,]
+        test_data <- Temp_data[-ind,]
+        
+        #fit logistic regression model with the train data
+        model <- glm(preparation.level ~ math.score + reading.score + writing.score, family="binomial",  data=train_data)
+        summary(model)
+        
+        # predicting train data based on the model
+        pred_model <- predict(model, Temp_data = train_data,type="response")
+        
+        # Changing probabilities
+        predict_reg <- ifelse(pred_model >0.5, 1, 0)
+        
+        # Convert to factor: p_class
+        p_class <- factor(predict_reg, levels = levels(train_data$preparation.level))
+        
+        ## Generating confusion matrix
+        confusionMatrix(p_class , train_data$preparation.level)
+```
+    
+we proceed with random forest Model for the prediction on test preparation
+    
+```{r}
+#splitting data into train and test dataset
+        set.seed(1234)
+        n<- dim(Temp_data)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Temp_data[ind,]
+        test_data <- Temp_data[-ind,]
+   
+       
+        #we begin with a random variable classifier model using 3000 trees
+        set.seed(2239)
+        rf.class <- randomForest(preparation.level ~ math.score + writing.score + reading.score, data=train_data, ntree=3000)
+        print(rf.class)
+        
+        
+        #Checking which of the variable is the most important in the prediction by way of ploting thr rf.class
+        varImpPlot(rf.class)
+        
+        #Class prediction (majority vote) -  predicting with train datasets and confusion matrix to assess predictive performance
+        class.pred <- predict(rf.class, data = train_data)
+        confusionMatrix(class.pred, train_data$preparation.level)
+        
+        
+        #plotting the errror rate
+        plot(rf.class)
+```
+    
+we conclude with decision tree Model for the prediction on test preparation    
+
+```{r}
+#Data Partition#
+
+         set.seed(1234)
+        n<- dim(Temp_data)[1]
+
+        ind <- sample(1:n,n*0.7, replace=F)
+
+        train_data <- Temp_data[ind,]
+        test_data <- Temp_data[-ind,]
+       
+        
+        set.seed(2225)
+        ## Tree Classification
+        tree <- rpart(preparation.level ~., data = train_data)
+        rpart.plot(tree)
+        
+        printcp(tree)
+        ##Method 1 Classification tree:
+        rpart(formula = preparation.level ~ ., data = train_data)
+        
+        ##Coefficient of Variation  
+        plotcp(tree)
+        
+        ## Choosing a complexity parameter (cp) to prune the tree
+        tree <- rpart(preparation.level ~., data = train_data,cp=0.01)
+        summary(tree)
+        
+        ##Confusion matrix -train
+        p <- predict(tree, train_data, type = 'class')
+        confusionMatrix(p, train_data$preparation.level, positive="1")
+```
+    
+Predictions according to gender 
+
+        
+```{r}
+####### Mapping Raw_data to Raw_data_final
+        
+        Raw_data_final <- data.frame(Raw_data)
+        
+        ### ifelse Condition to assign cathegories to Test Preparation Course
+        Raw_data_final$Gender <- ifelse(Raw_data$gender == "male", 1, 0)
+
+        Raw_data_final$Gender <- as.factor(Raw_data_final$Gender)
+        str(Raw_data_final)
+```
+    
+We start with Logistic Regression Model for the prediction on gender
+   
+```{r}
+
+        # splitting data into train and test dataset
+        set.seed(1234)
+        n<- dim(Raw_data_final)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Raw_data_final[ind,]
+        test_data <- Raw_data_final[-ind,]
+        
+        #fit logistic regression model with the train data
+        model <- glm(Gender ~ math.score + reading.score + writing.score, family="binomial", data=train_data)
+        summary(model)
+        
+        
+        # predicting train data based on the model
+        pred_model <- predict(model, Raw_data_final = train_data,type="response")
+        
+        # Changing probabilities
+        predict_reg <- ifelse(pred_model >0.5, 1, 0)
+        
+        # Convert to factor: p_class
+        p_class <- factor(predict_reg, levels = levels(train_data$Gender))
+        
+        ## Generating confusion matrix
+        confusionMatrix(p_class , train_data$Gender)
+```
+    
+we proceed with random forest Model for the prediction on gender
+    
+```{r}
+
+# splitting data into train and test dataset
+        set.seed(1234)
+        n<- dim(Raw_data_final)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Raw_data_final[ind,]
+        test_data <- Raw_data_final[-ind,]
+        
+#we begin with a random variable classifier model using 3000 trees
+        set.seed(1224)
+        rf.class <- randomForest(Gender ~ math.score + writing.score + reading.score, data=train_data, ntree=3000)
+        print(rf.class)
+        
+        #Checking which of the variable is the most important in the prediction by way of ploting the rf.class
+        varImpPlot(rf.class)
+        
+        #Class prediction (majority vote) -  predicting with train datasets and confusion matrix to assess predictive performance
+        class.pred <- predict(rf.class, data = train_data)
+        confusionMatrix(class.pred, train_data$Gender)
+        
+        #plotting the errror rate
+        plot(rf.class)
+```
+    
+we conclude with decision tree Model for the prediction on gender
+
+```{r}
+
+# splitting data into train and test dataset
+        set.seed(1234)
+        n<- dim(Raw_data_final)[1]
+        
+        ind <- sample(1:n,n*0.7, replace=F)
+        
+        train_data <- Raw_data_final[ind,]
+        test_data <- Raw_data_final[-ind,]
+        
+set.seed(2225)
+        ## Tree Classification
+        tree <- rpart(Gender ~., data = train_data)
+        rpart.plot(tree)
+        
+        printcp(tree)
+        ##Method 1 Classification tree:
+        rpart(formula = Gender ~ ., data = train_data)
+        
+        ##Coefficient of Variation  
+        plotcp(tree)
+        
+        ## Choosing a complexity parameter (cp) to prune the tree
+        tree <- rpart(Gender ~., data = train_data,cp=0.1)
+        summary(tree)
+        
+        ##Confusion matrix -train
+        p <- predict(tree, train_data, type = 'class')
+        confusionMatrix(p, train_data$Gender, positive="1")
+```
+    
+   
+```{r}
+        # Predicting based on the test data
+        set.seed(2225)
+        ## Tree Classification
+        tree <- rpart(Gender ~., data = test_data)
+        rpart.plot(tree)
+        
+        printcp(tree)
+        ##Method 1 Classification tree:
+        rpart(formula = Gender ~ ., data = test_data)
+        
+        ##Coefficient of Variation  
+        plotcp(tree)
+        
+        ## Choosing a complexity parameter (cp) to prune the tree
+        tree <- rpart(Gender ~., data = test_data,cp=0.1)
+        summary(tree)
+        
+        ##Confusion matrix -train
+        p <- predict(tree, test_data, type = 'class')
+        confusionMatrix(p, test_data$Gender, positive="1")
+```
+    
+    
