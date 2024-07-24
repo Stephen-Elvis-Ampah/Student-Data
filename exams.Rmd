@@ -1,11 +1,6 @@
 ---
 title: "Effect of Students Score"
-output:
-  html_document:
-    df_print: paged
-  theme: united
-  toc: yes
-  html_notebook: default
+output: rmarkdown::github_document
 ---
 
 
@@ -38,6 +33,9 @@ output:
       library(caret)
       library(pROC)
       library(tree)
+      library(rmarkdown)
+      library(webshot2)
+      library(htmlwidgets)
 
 ```
 
@@ -167,7 +165,11 @@ The skim function helps one to know:
                           fontSize = 18))%>%
     hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
        
-    hc
+    # Save the widget as an HTML file
+    saveWidget(hc, "plot.html", selfcontained = FALSE)
+    
+    # Use webshot to convert it to an image
+    webshot2::webshot("plot.html", "plot.png", delay = 5)
 ```   
     
 ```{r}
@@ -194,7 +196,12 @@ The skim function helps one to know:
                             fontWeight = 'bold',
                             fontSize = 18))%>%
       hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
-    hc
+    
+    # Save the widget as an HTML file
+    saveWidget(hc, "plot.html", selfcontained = FALSE)
+    
+    # Use webshot to convert it to an image
+    webshot2::webshot("plot.html", "plot.png", delay = 5)
 ```
     
     
@@ -220,7 +227,12 @@ The skim function helps one to know:
                             textOutline = F,
                             fontSize = 18))%>%
       hc_tooltip(pointFormat = '<b>{point.y:.1f}</b>')
-    hc
+    
+    # Save the widget as an HTML file
+    saveWidget(hc, "plot.html", selfcontained = FALSE)
+    
+    # Use webshot to convert it to an image
+    webshot2::webshot("plot.html", "plot.png", delay = 5)
     
 ```
  
@@ -301,7 +313,12 @@ The skim function helps one to know:
      hc_colors(summary_parent_level_edu$col)%>%
     
       hc_tooltip(pointFormat = '{series.name}: {point.y}<br/>Total: {point.stackTotal}')
-    hc
+    
+    # Save the widget as an HTML file
+    saveWidget(hc, "plot.html", selfcontained = FALSE)
+    
+    # Use webshot to convert it to an image
+    webshot2::webshot("plot.html", "plot.png", delay = 5)
 ```
  
  Comparing Students level of preparation 
@@ -364,7 +381,12 @@ The skim function helps one to know:
                y = 50)%>%
       hc_legend(labelFormat = '<span style="color:{color}">{name}</span')%>%
       hc_colors(summary_test_preparation$coll)
-    hc
+    
+      # Save the widget as an HTML file
+    saveWidget(hc, "plot.html", selfcontained = FALSE)
+    
+    # Use webshot to convert it to an image
+    webshot2::webshot("plot.html", "plot.png", delay = 5)
 ```
  
  Predictions with:
