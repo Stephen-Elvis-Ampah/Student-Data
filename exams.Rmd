@@ -1,6 +1,9 @@
 ---
 title: "Effect of Students Score"
-output: rmarkdown::github_document
+author: "Stephen Elvis Ampah"
+date: "2024-07-24"
+output:
+  html_document: default 
 ---
 
 
@@ -12,7 +15,7 @@ output: rmarkdown::github_document
 
 # Highcharter package will be used for some visualization in this project
 
-# Logistics Regression, Random forest and Dicision Tree will be used to build predictive models to see which model is the best predictor of the students performance in the exams after exploring the data
+# Logistics Regression, Random forest and Decision Tree will be used to build predictive models to see which model is the best predictor of the students performance in the exams after exploring the data
 
 # Loading packages neebed in R for the entile project
 
