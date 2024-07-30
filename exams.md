@@ -494,7 +494,7 @@ by way of a column chart
     
     # Save the widget as an HTML file
     saveWidget(hc, "plot.html", selfcontained = FALSE)
-    
+
     # Use webshot to convert it to an image
     webshot2::webshot("plot.html", "plot.png", delay = 5)
 ```
